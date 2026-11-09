@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notes · collab-repo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b0d17;
+      --card: rgba(255, 255, 255, 0.05);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #e8eaf6;
+      --muted: #8b90b0;
+      --accent: #7c5cff;
+      --accent2: #00d4ff;
+      --danger: #ff5c7a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    /* Animated glowing blobs in the background */
+    .blob {
+      position: fixed; border-radius: 50%; filter: blur(90px); opacity: 0.45; z-index: -1;
+      animation: float 18s ease-in-out infinite alternate;
+    }
+    .blob.one { width: 420px; height: 420px; background: var(--accent); top: -120px; left: -100px; }
+    .blob.two { width: 360px; height: 360px; background: var(--accent2); bottom: -120px; right: -80px; animation-delay: -6s; }
+    @keyframes float {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(80px, 60px) scale(1.15); }
+    }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 64px 20px; }
+
+    header { text-align: center; margin-bottom: 40px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: 'JetBrains Mono', monospace; font-size: 12px;
+      padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px;
+      color: var(--muted); margin-bottom: 18px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #2ee59d; box-shadow: 0 0 10px #2ee59d; }
+    .dot.off { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+    h1 {
+      font-size: clamp(40px, 8vw, 64px); font-weight: 700; letter-spacing: -2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    header p { color: var(--muted); margin-top: 8px; }
+
+    form {
+      display: flex; gap: 10px; padding: 10px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      backdrop-filter: blur(12px);
+    }
+    input {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: var(--text); font: inherit; font-size: 16px; padding: 10px 12px;
+    }
+    input::placeholder { color: var(--muted); }
+    button.add {
+      border: none; cursor: pointer; font: inherit; font-weight: 600; color: white;
+      padding: 10px 22px; border-radius: 10px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    button.add:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(124, 92, 255, 0.4); }
+
+    .stats { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; margin: 28px 4px 12px; }
+
+    ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    li {
+      display: flex; align-items: center; gap: 14px; padding: 16px 18px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      animation: pop 0.3s ease-out;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    li:hover { border-color: rgba(124, 92, 255, 0.5); transform: translateX(4px); }
+    @keyframes pop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .id {
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent2);
+      border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 6px; padding: 2px 8px;
+    }
+    .body { flex: 1; min-width: 0; }
+    .text { word-wrap: break-word; }
+    .time { color: var(--muted); font-size: 12px; margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+    button.del {
+      background: none; border: 1px solid transparent; color: var(--muted); cursor: pointer;
+      font-size: 18px; width: 34px; height: 34px; border-radius: 8px; transition: all 0.15s;
+    }
+    button.del:hover { color: var(--danger); border-color: var(--danger); }
+
+    .empty { text-align: center; color: var(--muted); padding: 48px 0; border: 1px dashed var(--border); border-radius: 14px; }
+
+    footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 48px; font-family: 'JetBrains Mono', monospace; }
+    footer a { color: var(--accent2); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="blob one"></div>
+  <div class="blob two"></div>
+
+  <main class="wrap">
+    <header>
+      <div class="badge"><span class="dot" id="statusDot"></span><span id="statusText">checking API…</span></div>
+      <h1>Notes</h1>
+      <p>A tiny Express + Node.js app · collab-repo</p>
+    </header>
+
+    <form id="noteForm">
+      <input id="noteInput" placeholder="Write a note and hit Enter…" autocomplete="off" />
+      <button class="add" type="submit">Add</button>
+    </form>
+
+    <div class="stats"><span id="count">0 notes</span><span>stored in memory</span></div>
+    <ul id="list"></ul>
+
+    <footer>Raw JSON → <a href="/notes" target="_blank">/notes</a> · <a href="/health" target="_blank">/health</a></footer>
+  </main>
+
+  <script>
+    const list = document.getElementById('list');
+    const form = document.getElementById('noteForm');
+    const input = document.getElementById('noteInput');
+    const count = document.getElementById('count');
+
+    // Check the API is alive
+    async function checkHealth() {
+      try {
+        const res = await fetch('/health');
+        if (!res.ok) throw new Error();
+        document.getElementById('statusText').textContent = 'API online';
+      } catch {
+        document.getElementById('statusDot').classList.add('off');
+        document.getElementById('statusText').textContent = 'API offline';
+      }
+    }
+
+    // Draw all notes on the page
+    function render(notes) {
+      count.textContent = `${notes.length} note${notes.length === 1 ? '' : 's'}`;
+      if (notes.length === 0) {
+        list.innerHTML = '<div class="empty">No notes yet ✨ add your first one above</div>';
+        return;
+      }
+      list.innerHTML = '';
+      notes.slice().reverse().forEach((note) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="id">#${note.id}</span>
+          <div class="body">
+            <div class="text"></div>
+            <div class="time">${note.createdAt}</div>
+          </div>
+          <button class="del" title="Delete">×</button>`;
+        li.querySelector('.text').textContent = note.text; // textContent = safe from HTML injection
+        li.querySelector('.del').onclick = () => deleteNote(note.id);
+        list.appendChild(li);
+      });
+    }
+
+    async function loadNotes() {
+      const res = await fetch('/notes');
+      render(await res.json());
+    }
+
+    async function deleteNote(id) {
+      await fetch(`/notes/${id}`, { method: 'DELETE' });
+      loadNotes();
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      await fetch('/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      input.value = '';
+      loadNotes();
+    });
+
+    checkHealth();
+    loadNotes();
+  </script>
+</body>
+</html>
